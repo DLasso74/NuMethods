@@ -50,8 +50,10 @@ connections =  cells["triangle"] # Conexiones de los nodos
 
 #%% Procesamiento
 TNodes = np.size(points,0)
+TElements = np.size(connections,0)
 Kg = sympy.zeros(TNodes)
 Mg = sympy.zeros(TNodes)
+Fg = sympy.zeros(TNodes,1)
 for n in range(TNodes):
     Node0 = connections[n,0] # Nodo 1 de la celda
     Node1 = connections[n,1] # Nodo 2 de la celda
@@ -91,6 +93,7 @@ for n in range(TNodes):
     Mg[Node2,Node2] =+ M[2,2]
 
 #%% Postprocesamiento
+
 # Exportación
 tri_mesh = {
         'points': points,
@@ -104,13 +107,6 @@ meshio.write(
     point_data=point_data)
 
 # Gráfico
-scale = 2
-plot_args = {'rstride': 1, 'cstride': 1, 'cmap':"viridis",
-             'linewidth': 0.1, 'antialiased': True, 'edgecolor': '#1e1e1e',
-             'shade': True, 'alpha': 1.0, 'vmin': 0, 'vmax':scale}
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ani = animation.FuncAnimation(fig, wave_iter, range(nframes), blit=False,
-                              fargs=(ax, X, Y, Z, Z0, dt, ntime_anim, L, scale,
-                                     plot_args))
-plt.show()
+figure = plt.figure() # Grafico de la superficie
+ax = figure.gca(projection='3d')
+ax.plot_trisurf(x, y, data, cmap=plt.cm.viridis)
