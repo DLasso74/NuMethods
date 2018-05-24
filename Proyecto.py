@@ -33,12 +33,18 @@ Nu2 = 0.5
 Nu3 = 0.5
 GQPoints = sympy.Matrix([[Xi1, Nu1],[Xi2, Nu2],[Xi3, Nu3]])
 # Funciones de Forma
-S = sympy.Matrix([[0.5,0.5,0],[0.5,0,0.5],[0,0.5,0.5]])
+S1 =  sympy.Matrix([0.5,0.5,0])
+S2 =  sympy.Matrix([0.5,0,0.5])
+S3 =  sympy.Matrix([0,0.5,0.5])
+S = sympy.Matrix([[0.5,0.5,0],[0.5,0,0.5],[0,0.5,0.5]]) # Matriz de Coordenadas nodales
 dS = sympy.Matrix([[-1, 1, 0],[-1, 0, 1]])
 # Velocidad de Onda
 prof = float(input("Introduzca la profundidad del lago en metros: "))
 c = np.sqrt(9.78*prof) # En m/s
 
+dt = 0.1 # Time step
+dy = 0.2 # Space step
+Xi, Nu = sympy.symbols("Xi Nu")
 x, y, t = sympy.symbols("x y t")
 #%% Preprocesamiento
 # Malla
@@ -53,7 +59,9 @@ TNodes = np.size(points,0)
 TElements = np.size(connections,0)
 Kg = sympy.zeros(TNodes)
 Mg = sympy.zeros(TNodes)
+Hg = sympy.zeros(TNodes)
 Fg = sympy.zeros(TNodes,1)
+bg = sympy.zeros(TNodes,1)
 for n in range(TNodes):
     Node0 = connections[n,0] # Nodo 1 de la celda
     Node1 = connections[n,1] # Nodo 2 de la celda
@@ -65,8 +73,6 @@ for n in range(TNodes):
     y2 = Yp[Node1]
     y3 = Yp[Node2]
     coord_el = sympy.Matrix([[x1,y1],[x2,y2],[x3,y3]])
-    # Matriz B
-    B = Jacob_inv(dS, coord_el) * dS
     # Rigidez local
     K = 0.5*sympy.det(Jacob(dS, coord_el)) * sympy.Matrix([[2, -1, -1],[-1, 2, -1],[-1, -1, 2]])
     # K Global
@@ -79,8 +85,20 @@ for n in range(TNodes):
     Kg[Node2,Node0] =+ K[2,0] 
     Kg[Node2,Node1] =+ K[2,1] 
     Kg[Node2,Node2] =+ K[2,2] 
+    # H Local
+    H = sympy.det(Jacob(dS, coord_el))/24 * sympy.Matrix([[2, 1, 1],[1, 2, 1],[1, 1, 2]])
+    # H Global
+    Hg[Node0,Node0] =+ H[0,0] 
+    Hg[Node0,Node1] =+ H[0,1] 
+    Hg[Node0,Node2] =+ H[0,2] 
+    Hg[Node1,Node0] =+ H[1,0] 
+    Hg[Node1,Node1] =+ H[1,1] 
+    Hg[Node1,Node2] =+ H[1,2] 
+    Hg[Node2,Node0] =+ H[2,0] 
+    Hg[Node2,Node1] =+ H[2,1] 
+    Hg[Node2,Node2] =+ H[2,2]
     # M local
-    M = sympy.det(Jacob(dS, coord_el))/24 * sympy.Matrix([[2, 1, 1],[1, 2, 1],[1, 1, 2]])
+    M = 1/(c**2) * H
     # M Global
     Mg[Node0,Node0] =+ M[0,0] 
     Mg[Node0,Node1] =+ M[0,1] 
