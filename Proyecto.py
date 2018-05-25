@@ -42,17 +42,15 @@ dS = sympy.Matrix([[-1, 1, 0],[-1, 0, 1]])
 prof = float(input("Introduzca la profundidad del lago en metros: "))
 c = np.sqrt(9.78*prof) # En m/s
 
-dt = 0.1 # Time step
-dy = 0.2 # Space step
-Xi, Nu = sympy.symbols("Xi Nu")
-x, y, t = sympy.symbols("x y t")
 #%% Preprocesamiento
 # Malla
-points, cells, point_data, cell_data, field_data = meshio.read("input.msh")
+points, cells, point_data, cell_data, field_data = meshio.read("input.msh") # Se requiere una malla con triángulos uniformes
 Xp = points[:, 0] # Puntos en X
 Yp = points[:, 1] # Puntos en Y
 Zp = points[:, 2] # Puntos en Z
 connections =  cells["triangle"] # Conexiones de los nodos
+dt = 0.1 # Time step
+dy = Yp[connections[1,1]] - Yp[connections[1,0]] # Space step basandose en la distancia entre nodos de los triángulos
 
 #%% Procesamiento
 TNodes = np.size(points,0)
@@ -110,6 +108,19 @@ for n in range(TNodes):
     Mg[Node2,Node1] =+ M[2,1] 
     Mg[Node2,Node2] =+ M[2,2]
 
+B = 2*dt**2/dy**2 *Hg   
+A = 2*Mg - dt**2 *Kg - B
+Iteraciones = TNodes
+
+U = sympy.zeros(Iteraciones, TNodes)
+longitud = np.size(connections,0)
+y = np.linspace(0, longitud, TNodes)
+t = np.linspace(0, dt*Iteraciones, Iteraciones)
+U[1, 25] = 1 # Condicion inicial
+
+for cont_t in range(2, Iteraciones): # Solución para cada tiempo mayor a 2*dr
+    for cont_y in range(1, TNodes - 1):
+        U[cont_t - 1, cont_y] = A * U[cont_t, cont_y] + B * (U[cont_t, cont_y + 1] + U[cont_t, cont_y - 1]) - Mg * U[cont_y + 1, cont_y]
 #%% Postprocesamiento
 
 # Exportación
